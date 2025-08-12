@@ -1,4 +1,4 @@
-import sys
+import argparse
 from itertools import combinations
 import numpy as np
 import copy
@@ -96,12 +96,14 @@ class Sudoku:
 
             curr = len(self.val_to_cells[0])
             if prev == curr:
-                number_of_notes0 = sum(len(cell.notes) for cell in self.val_to_cells[0])
+                number_of_notes0 = sum(len(cell.notes)
+                                       for cell in self.val_to_cells[0])
                 self.replace_line()
                 self.replace_n_notes(n=2)
                 self.replace_n_notes(n=3)
                 self.replace_n_notes(n=4)
-                number_of_notes1 = sum(len(cell.notes) for cell in self.val_to_cells[0])
+                number_of_notes1 = sum(len(cell.notes)
+                                       for cell in self.val_to_cells[0])
 
                 if number_of_notes1 == 0:
                     is_empty_cells = self.val_to_cells[0]
@@ -129,7 +131,8 @@ class Sudoku:
                     else:
                         self.val_to_cells[0][0].notes.remove(val)
                 else:
-                    print(f"Progress made: {prev} -> {curr}, notes: {number_of_notes0} -> {number_of_notes1}")
+                    print(
+                        f"Progress made: {prev} -> {curr}, notes: {number_of_notes0} -> {number_of_notes1}")
         return True, self
 
     def __str__(self):
@@ -138,9 +141,9 @@ class Sudoku:
         s1 = '|         |' * 9 + "\n"
         s2 = '|---------|' * 9 + "\n"
 
-        lines = [] 
+        lines = []
         lines.append(s2)
-        
+
         for i in range(9):
             row_parts = []
             for j in range(9):
@@ -196,13 +199,9 @@ class Sudoku:
     def replace_single_note_in_block(self):
 
         for k in range(1, 10, 1):
-            box_indexes = BOX_IDX[k]
-            col_indexes = COL_IDX[k]
-            row_indexes = ROW_IDX[k]
-
-            self.replace_single_note_in_block_from_index_list(box_indexes)
-            self.replace_single_note_in_block_from_index_list(col_indexes)
-            self.replace_single_note_in_block_from_index_list(row_indexes)
+            self.replace_single_note_in_block_from_index_list(BOX_IDX[k])
+            self.replace_single_note_in_block_from_index_list(COL_IDX[k])
+            self.replace_single_note_in_block_from_index_list(ROW_IDX[k])
 
     def replace_line(self):
         for k in range(1, 10, 1):
@@ -268,13 +267,9 @@ class Sudoku:
 
         return notes_value_to_idx
 
-    def replace_n_notes(self, n):
-        for k in range(1, 10, 1):
-            box_indexes = BOX_IDX[k]
-            self.set_n_notes(box_indexes, n)
-
     def put_value_and_remove_notes(self, cell, value):
-        if cell in self.val_to_cells[0]:  # powinno zawsze byc przy normalnym rozwiazywaniu
+        # powinno zawsze byc przy normalnym rozwiazywaniu
+        if cell in self.val_to_cells[0]:
             self.val_to_cells[0].remove(cell)
 
         cell.value = value
@@ -293,6 +288,12 @@ class Sudoku:
         for index in indexes:
             if value in fields[index].notes:
                 fields[index].notes.remove(value)
+
+    def replace_n_notes(self, n):
+        for k in range(1, 10, 1):
+            self.set_n_notes(BOX_IDX[k], n)
+            self.set_n_notes(ROW_IDX[k], n)
+            self.set_n_notes(COL_IDX[k], n)
 
     def set_n_notes(self, box_indexes, n):
         fields = self.fields
@@ -316,14 +317,13 @@ class Sudoku:
                     fields[idx].notes = list(vals)
 
 
-
-
-import argparse
-
 def main():
-    parser = argparse.ArgumentParser(description="Solve a Sudoku puzzle from a file.")
-    parser.add_argument("task_file", help="Path to the Sudoku task file (e.g., task.txt)")
-    parser.add_argument("solution_file", help="Path where the solved Sudoku will be saved (e.g., solution.txt)")
+    parser = argparse.ArgumentParser(
+        description="Solve a Sudoku puzzle from a file.")
+    parser.add_argument(
+        "task", help="Path to the Sudoku task file (e.g., task.txt)")
+    parser.add_argument(
+        "solution", help="Path where the solved Sudoku will be saved (e.g., solution.txt)")
     args = parser.parse_args()
 
     sudoku = Sudoku(args.task_file)
@@ -334,10 +334,6 @@ def main():
         for number in solution:
             file.write(f"{number}")
 
-    if is_solved:
-        print(f"Sudoku solved successfully! Solution saved to '{args.solution_file}'.")
-    else:
-        print("Sudoku could not be solved.")
 
 if __name__ == "__main__":
     main()
