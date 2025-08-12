@@ -49,11 +49,12 @@ class Cell:
         self.box = box
         self.idx = idx
 
+
 class Sudoku:
 
     def __init__(self, file):
         self.fields = [None] * 81
-        self.f = {
+        self.val_to_cells = {
             0: [],
             1: [],
             2: [],
@@ -70,69 +71,65 @@ class Sudoku:
             number_string = file.read().strip()
         number_list = [int(digit) for digit in number_string]
         assert len(number_list) == 81
-        
+
         for i in range(81):
 
             row = i // 9 + 1
             column = i % 9 + 1
             box = 3 * ((row - 1) // 3) + ((column - 1) // 3) + 1
-            
+
             value = number_list[i]
             cell = Cell(value, row, column, box, i)
-            
+
             self.fields[i] = cell
-            self.f[value].append(cell)
-        
-        
+            self.val_to_cells[value].append(cell)
+
         self.make_notes()
 
     def solve(self):
-        print("Solving Sudoku...")
-        
-        while self.f[0]:
-            prev = len(self.f[0])
+
+        while self.val_to_cells[0]:
+            prev = len(self.val_to_cells[0])
 
             self.replace_single_notes()
             self.replace_single_note_in_block()
-            
-            curr = len(self.f[0])
+
+            curr = len(self.val_to_cells[0])
             if prev == curr:
-                number_of_notes0 = sum(len(cell.notes) for cell in self.f[0])
+                number_of_notes0 = sum(len(cell.notes) for cell in self.val_to_cells[0])
                 self.replace_line()
-                number_of_notes1 = sum(len(cell.notes) for cell in self.f[0])
                 self.replace_n_notes(n=2)
-                number_of_notes2 = sum(len(cell.notes) for cell in self.f[0])
                 self.replace_n_notes(n=3)
-                number_of_notes3 = sum(len(cell.notes) for cell in self.f[0])
                 self.replace_n_notes(n=4)
-                number_of_notes4 = sum(len(cell.notes) for cell in self.f[0])
-                
-                if number_of_notes4 == 0:
-                    is_empty_cells = self.f[0] 
+                number_of_notes1 = sum(len(cell.notes) for cell in self.val_to_cells[0])
+
+                if number_of_notes1 == 0:
+                    is_empty_cells = self.val_to_cells[0]
                     return not is_empty_cells  # If no empty cells, Sudoku is solved
-                
-                if number_of_notes0 == number_of_notes1 == number_of_notes2 == number_of_notes3 == number_of_notes4:
+
+                if number_of_notes0 == number_of_notes1:
                     print("No progress made, trying to put a value from notes")
-                    empty_cell = self.f[0][0]  
-                    
-                    sudoku_alt = copy.deepcopy(self)  
-                     
+                    empty_cell = self.val_to_cells[0][0]
+
+                    sudoku_alt = copy.deepcopy(self)
+
                     if not empty_cell.notes:
                         return False
-                 
+
                     val = empty_cell.notes[0]
 
-                    sudoku_alt.put_value_and_remove_notes(sudoku_alt.f[0][0], val)
-                    
+                    sudoku_alt.put_value_and_remove_notes(
+                        sudoku_alt.f[0][0], val)
+
                     is_alt_solved = sudoku_alt.solve()
-                    
+
                     if is_alt_solved:
                         self = sudoku_alt
                         return True, self
                     else:
-                        self.f[0][0].notes.remove(val)
+                        self.val_to_cells[0][0].notes.remove(val)
                 else:
-                    print(f"Progress made: {prev} -> {curr}, notes: {number_of_notes0} -> {number_of_notes1} -> {number_of_notes2} -> {number_of_notes3} -> {number_of_notes4}")
+                    print(f"Progress made: {prev} -> {curr}, notes: {number_of_notes0} -> {number_of_notes1}")
         return True, self
 
     def __str__(self):
@@ -141,16 +138,17 @@ class Sudoku:
         s1 = '|         |' * 9 + "\n"
         s2 = '|---------|' * 9 + "\n"
 
-        lines = []  # Collect lines here
-
+        lines = [] 
         lines.append(s2)
+        
         for i in range(9):
             row_parts = []
             for j in range(9):
                 cell = self.fields[i * 9 + j]
-                value_str = cell.value if cell.value is not None else "."
+                value_str = cell.value
                 notes_str = "".join(map(str, cell.notes)) if cell.notes else ""
-                row_parts.append(f"|{value_str:<{value_width}}{notes_str:<{notes_width}}|")
+                row_parts.append(
+                    f"|{value_str:<{value_width}}{notes_str:<{notes_width}}|")
             lines.append("".join(row_parts) + "\n")
             lines.append(s1)
             lines.append(s2)
@@ -171,7 +169,7 @@ class Sudoku:
         }
 
         for value in range(1, 10, 1):
-            cells_value = self.f[value]
+            cells_value = self.val_to_cells[value]
             for cell in cells_value:
                 forbidden_dict[value]['rows'].append(cell.row)
                 forbidden_dict[value]['cols'].append(cell.column)
@@ -179,7 +177,7 @@ class Sudoku:
 
         for value in range(1, 10, 1):
 
-            empty_cells = self.f[0]
+            empty_cells = self.val_to_cells[0]
             forbiden_dict_value = forbidden_dict[value]
 
             for cell in empty_cells:
@@ -189,7 +187,7 @@ class Sudoku:
                     cell.notes.append(value)
 
     def replace_single_notes(self):
-        empty_cells = self.f[0]
+        empty_cells = self.val_to_cells[0]
         for cell in empty_cells:
             if len(cell.notes) == 1:
                 value = cell.notes[0]
@@ -205,16 +203,15 @@ class Sudoku:
             self.replace_single_note_in_block_from_index_list(box_indexes)
             self.replace_single_note_in_block_from_index_list(col_indexes)
             self.replace_single_note_in_block_from_index_list(row_indexes)
-    
+
     def replace_line(self):
         for k in range(1, 10, 1):
             box_indexes = BOX_IDX[k]
             self.remove_notes_from_line(box_indexes)
 
-            
     def remove_notes_from_line(self, box_indexes):
         notes_value_to_idx = self.get_notes_value_to_idx(box_indexes)
-        
+
         for val, idx_list in notes_value_to_idx.items():
             if len(idx_list) > 3 or len(idx_list) == 0:
                 continue
@@ -222,23 +219,20 @@ class Sudoku:
             is_same_row = r.min() == r.max()
             c = np.array(idx_list) % 9 + 1
             is_same_column = c.min() == c.max()
-            
+
             if is_same_row:
                 row = r[0]
                 row_indexes = ROW_IDX[row]
-                
+
                 remove_indexes = set(row_indexes) - set(box_indexes)
                 self.remove_value_from_notes(remove_indexes, val)
-                
+
             if is_same_column:
                 column = c[0]
                 col_indexes = COL_IDX[column]
-                
+
                 remove_indexes = set(col_indexes) - set(box_indexes)
                 self.remove_value_from_notes(remove_indexes, val)
-                
-             
-        
 
     def replace_single_note_in_block_from_index_list(self, indexes):
         fields = self.fields
@@ -252,9 +246,8 @@ class Sudoku:
                 value = val
                 cell = fields[idx]
                 self.put_value_and_remove_notes(cell, value)
-                
-                
-    def get_notes_value_to_idx(self, indexes):        
+
+    def get_notes_value_to_idx(self, indexes):
         fields = self.fields
         notes_value_to_idx = {
             1: [],
@@ -272,22 +265,17 @@ class Sudoku:
             notes = fields[index].notes
             for val in notes:
                 notes_value_to_idx[val].append(index)
-                
+
         return notes_value_to_idx
-    
-    
+
     def replace_n_notes(self, n):
         for k in range(1, 10, 1):
             box_indexes = BOX_IDX[k]
             self.set_n_notes(box_indexes, n)
 
-
-
-
-
     def put_value_and_remove_notes(self, cell, value):
-        if cell in self.f[0]: #powinno zawsze byc przy normalnym rozwiazywaniu
-            self.f[0].remove(cell)
+        if cell in self.val_to_cells[0]:  # powinno zawsze byc przy normalnym rozwiazywaniu
+            self.val_to_cells[0].remove(cell)
 
         cell.value = value
         cell.notes = []
@@ -295,88 +283,61 @@ class Sudoku:
         row_indexes = ROW_IDX[cell.row]
         col_indexes = COL_IDX[cell.column]
         box_indexes = BOX_IDX[cell.box]
-        
+
         self.remove_value_from_notes(row_indexes, value)
         self.remove_value_from_notes(col_indexes, value)
         self.remove_value_from_notes(box_indexes, value)
-                
+
     def remove_value_from_notes(self, indexes, value):
         fields = self.fields
         for index in indexes:
             if value in fields[index].notes:
                 fields[index].notes.remove(value)
-                
-                
+
     def set_n_notes(self, box_indexes, n):
-        fields = self.fields    
+        fields = self.fields
         notes_value_to_idx = self.get_notes_value_to_idx(box_indexes)
-                
+
         n_notes = {}
         for val in range(1, 10, 1):
             idx_list = notes_value_to_idx[val]
             if len(idx_list) == n:
                 n_notes[val] = idx_list
-        
+
         n_notes_comparations = list(combinations(n_notes, n))
         for vals in n_notes_comparations:
             ncomp = {val: n_notes[val] for val in vals}
-            
+
             idxs = list(ncomp.values())
             ref = set(idxs[0])
-            
+
             if all(set(i) == ref for i in idxs):
                 for idx in ref:
                     fields[idx].notes = list(vals)
-        
-        
-            
-        
-        
-
-sudoku = Sudoku("task.txt")
-is_solved, sudoku = sudoku.solve()
-print(sudoku)
-print(is_solved)
-
-solution = [cell.value for cell in sudoku.fields]
-with open('solution.txt', 'w') as file:
-    for number in solution:
-        file.write(f"{number}")
 
 
-'''
-solved = 0
-not_solved = 0
-with open('sudoku.csv', 'r') as csv_file:
-    for line in csv_file:
-        print(solved, not_solved)
 
-        
-        with open('task.txt', 'w') as task, open('solution2.txt', 'w') as sol:
-            t, s = line.strip().split(',')
-            task.write(t)
-            sol.write(s)
 
-        sudoku = Sudoku("task.txt")
-        is_solved, sudoku = sudoku.solve()
+import argparse
 
-        solution = [cell.value for cell in sudoku.fields]
+def main():
+    parser = argparse.ArgumentParser(description="Solve a Sudoku puzzle from a file.")
+    parser.add_argument("task_file", help="Path to the Sudoku task file (e.g., task.txt)")
+    parser.add_argument("solution_file", help="Path where the solved Sudoku will be saved (e.g., solution.txt)")
+    args = parser.parse_args()
 
-        with open('solution.txt', 'w') as file:
-            for number in solution:
-                file.write(f"{number}")
+    sudoku = Sudoku(args.task_file)
+    is_solved, sudoku = sudoku.solve()
 
-        with open('solution.txt', 'r') as f1, open('solution2.txt', 'r') as f2:
-            are_equal = f1.read() == f2.read()  # Compare file contents
-            if are_equal:
-                solved+=1
-            else:
-                not_solved+=1
+    solution = [cell.value for cell in sudoku.fields]
+    with open(args.solution_file, 'w') as file:
+        for number in solution:
+            file.write(f"{number}")
 
-        if solved == 5000:
-            print(solved / (solved + not_solved))
-            sys.exit("stop")
+    if is_solved:
+        print(f"Sudoku solved successfully! Solution saved to '{args.solution_file}'.")
+    else:
+        print("Sudoku could not be solved.")
 
-print(solved/(solved+not_solved))
-
-'''
+if __name__ == "__main__":
+    main()
