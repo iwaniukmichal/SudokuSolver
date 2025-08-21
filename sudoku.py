@@ -107,7 +107,7 @@ class Sudoku:
 
                 if number_of_notes1 == 0:
                     is_empty_cells = self.val_to_cells[0]
-                    return not is_empty_cells  # If no empty cells, Sudoku is solved
+                    return not is_empty_cells, self  # If no empty cells, Sudoku is solved
 
                 if number_of_notes0 == number_of_notes1:
                     print("No progress made, trying to put a value from notes")
@@ -116,14 +116,14 @@ class Sudoku:
                     sudoku_alt = copy.deepcopy(self)
 
                     if not empty_cell.notes:
-                        return False
+                        return False, self
 
                     val = empty_cell.notes[0]
 
                     sudoku_alt.put_value_and_remove_notes(
-                        sudoku_alt.f[0][0], val)
+                        sudoku_alt.val_to_cells[0][0], val)
 
-                    is_alt_solved = sudoku_alt.solve()
+                    is_alt_solved, _ = sudoku_alt.solve()
 
                     if is_alt_solved:
                         self = sudoku_alt
@@ -337,3 +337,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
